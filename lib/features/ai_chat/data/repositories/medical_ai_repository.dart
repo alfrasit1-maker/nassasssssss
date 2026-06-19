@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
 import 'package:digl/features/medical_profile/models/doctor_recommendation_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:digl/features/medical_profile/services/advanced_diagnosis_service.dart';
 import 'package:digl/features/medical_profile/services/doctor_matching_service.dart';
 import '../models/ai_chat_message.dart';
@@ -30,8 +32,20 @@ class MedicalAiRepository {
 
   Future<void> saveMessage(AiChatMessage message) async {
     final uid = auth.currentUser?.uid;
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getStringList('medical_ai_chat_history') ?? <String>[];
+    current.add(jsonEncode({'id': message.id, ...message.toMap(firestore: false)}));
+    await prefs.setStringList('medical_ai_chat_history', current.take(200).toList());
     if (uid == null) return;
     await firestore.collection('users').doc(uid).collection('medical_ai_chats').doc(message.id).set(message.toMap());
+  }
+
+  Future<List<AiChatMessage>> loadLocalMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList('medical_ai_chat_history') ?? <String>[]).map((raw) {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return AiChatMessage.fromMap(map['id'].toString(), map);
+    }).toList();
   }
 
   String _specialtyForProblem(String problem) {

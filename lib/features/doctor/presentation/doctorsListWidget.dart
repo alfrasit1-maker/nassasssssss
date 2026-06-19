@@ -34,7 +34,7 @@ class DoctorsListWidget extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 210, // ارتفاع مخصص للعرض الأفقي
+          height: 250, // ارتفاع مخصص للعرض الأفقي
           child: StreamBuilder<QuerySnapshot>(
             stream: doctorsStream,
             builder: (context, snapshot) {
@@ -82,6 +82,25 @@ class DoctorsListWidget extends StatelessWidget {
       ],
     );
   }
+
+  Widget _miniChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 3),
+          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
 }
 
 class DoctorCard extends StatelessWidget {
@@ -103,7 +122,7 @@ class DoctorCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 150,
+        width: 190,
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: isDarkMode? Colors.grey[900]:Colors.white,
@@ -173,15 +192,17 @@ class DoctorCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
-                      Icon(Icons.star, color: Colors.orange[400], size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        (user.rating ?? 0).toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      _miniChip(Icons.star, (user.rating ?? 0).toStringAsFixed(1), Colors.orange),
+                      _miniChip(Icons.reviews, '${user.reviewCount ?? 0}', Theme.of(context).colorScheme.primary),
+                      if (user.minSessionPrice != null || user.maxSessionPrice != null)
+                        _miniChip(Icons.payments, '${user.minSessionPrice?.toStringAsFixed(0) ?? 0}-${user.maxSessionPrice?.toStringAsFixed(0) ?? 0}', Colors.green),
+                      if ((user.address ?? '').isNotEmpty)
+                        _miniChip(Icons.location_on, 'خرائط', Colors.redAccent),
                     ],
                   ),
                 ],
@@ -189,6 +210,25 @@ class DoctorCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _miniChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 3),
+          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }

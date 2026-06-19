@@ -11,6 +11,13 @@ class MedicalAiChatProvider extends ChangeNotifier {
   bool isLoading = false;
   String? error;
 
+  Future<void> loadLocalHistory() async {
+    messages
+      ..clear()
+      ..addAll(await repository.loadLocalMessages());
+    notifyListeners();
+  }
+
   Future<String> buildInitialRecommendation(MedicalIntake intake) async {
     isLoading = true;
     error = null;
@@ -47,6 +54,17 @@ class MedicalAiChatProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> sendAttachment(MedicalIntake intake, String path, String type) async {
+    final label = type == 'image' ? 'تم رفع صورة للتحليل' : 'تم رفع ملف للمراجعة';
+    await _add(AiChatMessage(id: DateTime.now().microsecondsSinceEpoch.toString(), content: label, isUser: true, createdAt: DateTime.now(), attachmentPath: path, attachmentType: type));
+    isLoading = true; error = null; notifyListeners();
+    try {
+      final reply = await repository.sendMessage(intake, messages, '$label: $path');
+      await _addBot(reply.isEmpty ? 'تم استلام المرفق. صف لي ما تريد تحليله بالتحديد.' : reply);
+    } catch (e) { error = 'تعذر تحليل المرفق: $e'; }
+    finally { isLoading = false; notifyListeners(); }
   }
 
   Future<void> _addUser(String content) async => _add(AiChatMessage(id: DateTime.now().microsecondsSinceEpoch.toString(), content: content, isUser: true, createdAt: DateTime.now()));

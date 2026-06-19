@@ -297,8 +297,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _currentIndex == 0 ? buildAppBar() : null,
-      body: PremiumGradientBackground(
-        child: IndexedStack(
+      body: SafeArea(
+        bottom: false,
+        child: PremiumGradientBackground(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 118),
+          child: IndexedStack(
           index: _currentIndex,
           children: [
             RefreshIndicator(
@@ -333,8 +337,17 @@ class _HomeScreenState extends State<HomeScreen> {
             const ProfileScreen(),
           ],
         ),
+        ),
+      ),
       ),
       extendBody: true,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'global_ai_chat_fab',
+        onPressed: () => Navigator.of(context).pushNamed('/medical_ai_chat'),
+        icon: const Icon(Icons.smart_toy_rounded),
+        label: const Text('مساعد AI'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: ModernBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -378,7 +391,7 @@ class WelcomeMoodSection extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     return PremiumSurface(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(18),
       radius: 32,
       gradient: LinearGradient(
         begin: Alignment.topRight,
@@ -459,14 +472,13 @@ class WelcomeMoodSection extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _buildMoodButton(Icons.sentiment_very_satisfied_rounded, "ممتاز", theme),
-                          const SizedBox(width: 8),
                           _buildMoodButton(Icons.sentiment_satisfied_rounded, "جيد", theme),
-                          const SizedBox(width: 8),
                           _buildMoodButton(Icons.sentiment_neutral_rounded, "عادي", theme),
-                          const SizedBox(width: 8),
                           _buildMoodButton(Icons.sentiment_dissatisfied_rounded, "سيء", theme),
                         ],
                       ),
@@ -484,7 +496,8 @@ class WelcomeMoodSection extends StatelessWidget {
   Widget _buildMoodButton(IconData icon, String label, ThemeData theme) {
     final colorScheme = theme.colorScheme;
     final isSelected = selectedMood == label;
-    return Expanded(
+    return SizedBox(
+      width: 112,
       child: ElevatedButton.icon(
         onPressed: () => onMoodSelected(label),
         icon: Icon(icon, color: isSelected ? colorScheme.primary : colorScheme.onPrimary),
@@ -492,12 +505,12 @@ class WelcomeMoodSection extends StatelessWidget {
           label,
           style: TextStyle(
             color: isSelected ? colorScheme.primary : colorScheme.onPrimary,
-            fontSize: 14,
+            fontSize: 12,
           ),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: isSelected ? colorScheme.onPrimary : colorScheme.onPrimary.withOpacity(0.12),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           side: BorderSide(color: colorScheme.onPrimary.withOpacity(isSelected ? 0 : .24)),
         ),

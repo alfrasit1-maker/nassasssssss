@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/medical_intake.dart';
 import '../../data/repositories/medical_ai_repository.dart';
@@ -7,7 +10,6 @@ import '../providers/medical_ai_chat_provider.dart';
 
 class MedicalAiChatScreen extends StatefulWidget {
   const MedicalAiChatScreen({super.key});
-
   @override
   State<MedicalAiChatScreen> createState() => _MedicalAiChatScreenState();
 }
@@ -29,39 +31,40 @@ class _MedicalAiChatScreenState extends State<MedicalAiChatScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => MedicalAiChatProvider(MedicalAiRepository(apiService: MedicalAiApiService())),
+      create: (_) => MedicalAiChatProvider(MedicalAiRepository(apiService: MedicalAiApiService()))..loadLocalHistory(),
       child: Scaffold(
         appBar: AppBar(
-          leading: const BackButton(),
-          title: const Text('المحادثة الطبية الذكية'),
-          actions: [
-            IconButton(tooltip: 'بدء محادثة جديدة', onPressed: () => setState(() => _intake = null), icon: const Icon(Icons.refresh)),
-            IconButton(tooltip: 'معلومات الخدمة', onPressed: () => showAboutDialog(context: context, applicationName: 'AI Medical Chat', children: const [Text('لا تضع API Key داخل الكود. اربط MedicalAiApiService بخدمتك الآمنة.')]), icon: const Icon(Icons.info_outline)),
-          ],
+          leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+          title: const Text('مساعد نبض AI'),
+          actions: [IconButton(tooltip: 'محادثة جديدة', onPressed: () => setState(() => _intake = null), icon: const Icon(Icons.add_comment_rounded))],
         ),
-        body: _intake == null ? _buildIntake(context) : _buildChat(context),
+        body: SafeArea(child: _intake == null ? _buildIntake(context) : _buildChat(context)),
       ),
     );
   }
 
-  Widget _buildIntake(BuildContext context) => Form(
-    key: _formKey,
-    child: ListView(padding: const EdgeInsets.all(16), children: [
-      TextFormField(controller: _problem, decoration: const InputDecoration(labelText: 'ما المرض أو المشكلة؟'), validator: _required),
-      const SizedBox(height: 12), TextFormField(controller: _started, decoration: const InputDecoration(labelText: 'منذ متى بدأت الأعراض؟'), validator: _required),
-      const SizedBox(height: 12), TextFormField(controller: _age, decoration: const InputDecoration(labelText: 'كم عمر المريض؟'), keyboardType: TextInputType.number, validator: (v){ final n=int.tryParse(v??''); return n==null||n<=0?'أدخل عمر صحيح':null;}),
-      const SizedBox(height: 12), DropdownButtonFormField(value: _gender, decoration: const InputDecoration(labelText: 'الجنس'), items: ['ذكر','أنثى'].map((e)=>DropdownMenuItem(value:e, child:Text(e))).toList(), onChanged: (v)=>setState(()=>_gender=v!)),
-      const SizedBox(height: 12), TextFormField(controller: _duration, decoration: const InputDecoration(labelText: 'عدد الأيام أو الأشهر'), validator: _required),
-      const SizedBox(height: 12), DropdownButtonFormField(value: _severity, decoration: const InputDecoration(labelText: 'شدة الحالة'), items: ['خفيفة','متوسطة','شديدة','طارئة'].map((e)=>DropdownMenuItem(value:e, child:Text(e))).toList(), onChanged: (v)=>setState(()=>_severity=v!)),
-      const SizedBox(height: 20), Consumer<MedicalAiChatProvider>(builder: (context, provider, _) => ElevatedButton.icon(onPressed: provider.isLoading ? null : () async { if(!_formKey.currentState!.validate()) return; final intake=MedicalIntake(problem:_problem.text.trim(), symptomStart:_started.text.trim(), age:int.parse(_age.text.trim()), gender:_gender, duration:_duration.text.trim(), severity:_severity); setState(()=>_intake=intake); await provider.buildInitialRecommendation(intake); }, icon: const Icon(Icons.psychology), label: const Text('تحليل البيانات'))),
-    ]),
-  );
+  Widget _buildIntake(BuildContext context) => Form(key: _formKey, child: ListView(padding: const EdgeInsets.all(16), children: [
+    Text('لنبدأ بسياق طبي مختصر', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+    const SizedBox(height: 16),
+    TextFormField(controller: _problem, decoration: const InputDecoration(labelText: 'ما المشكلة أو الأعراض؟', prefixIcon: Icon(Icons.sick_outlined)), validator: _required),
+    const SizedBox(height: 12), TextFormField(controller: _started, decoration: const InputDecoration(labelText: 'متى بدأت؟'), validator: _required),
+    const SizedBox(height: 12), TextFormField(controller: _age, decoration: const InputDecoration(labelText: 'العمر'), keyboardType: TextInputType.number, validator: (v){ final n=int.tryParse(v??''); return n==null||n<=0?'أدخل عمر صحيح':null;}),
+    const SizedBox(height: 12), DropdownButtonFormField(value: _gender, decoration: const InputDecoration(labelText: 'الجنس'), items: ['ذكر','أنثى'].map((e)=>DropdownMenuItem(value:e, child:Text(e))).toList(), onChanged: (v)=>setState(()=>_gender=v!)),
+    const SizedBox(height: 12), TextFormField(controller: _duration, decoration: const InputDecoration(labelText: 'مدة الأعراض'), validator: _required),
+    const SizedBox(height: 12), DropdownButtonFormField(value: _severity, decoration: const InputDecoration(labelText: 'شدة الحالة'), items: ['خفيفة','متوسطة','شديدة','طارئة'].map((e)=>DropdownMenuItem(value:e, child:Text(e))).toList(), onChanged: (v)=>setState(()=>_severity=v!)),
+    const SizedBox(height: 20), Consumer<MedicalAiChatProvider>(builder: (context, provider, _) => ElevatedButton.icon(onPressed: provider.isLoading ? null : () async { if(!_formKey.currentState!.validate()) return; final intake=MedicalIntake(problem:_problem.text.trim(), symptomStart:_started.text.trim(), age:int.parse(_age.text.trim()), gender:_gender, duration:_duration.text.trim(), severity:_severity); setState(()=>_intake=intake); await provider.buildInitialRecommendation(intake); }, icon: const Icon(Icons.auto_awesome), label: const Text('ابدأ المحادثة'))),
+  ]));
 
   Widget _buildChat(BuildContext context) => Consumer<MedicalAiChatProvider>(builder: (context, provider, _) => Column(children: [
-    if (provider.error != null) MaterialBanner(content: Text(provider.error!), actions: [TextButton(onPressed: (){}, child: const Text('حسناً'))]),
-    Expanded(child: ListView.builder(padding: const EdgeInsets.all(12), itemCount: provider.messages.length, itemBuilder: (_, i){ final m=provider.messages[i]; return Align(alignment: m.isUser?Alignment.centerRight:Alignment.centerLeft, child: Card(color: m.isUser?Theme.of(context).colorScheme.primaryContainer:null, child: Padding(padding: const EdgeInsets.all(12), child: Text(m.content)))); })),
-    if (provider.isLoading) const LinearProgressIndicator(),
-    SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [Expanded(child: TextField(controller: _message, decoration: const InputDecoration(hintText: 'اكتب رسالتك الطبية...'))), IconButton(tooltip: 'إرسال', onPressed: provider.isLoading ? null : () { final text=_message.text; _message.clear(); provider.send(_intake!, text); }, icon: const Icon(Icons.send))]))),
+    if (provider.error != null) MaterialBanner(content: Text(provider.error!), actions: [TextButton(onPressed: () => provider.error = null, child: const Text('حسناً'))]),
+    Expanded(child: ListView.builder(reverse: false, padding: const EdgeInsets.fromLTRB(12, 12, 12, 8), itemCount: provider.messages.length, itemBuilder: (_, i){ final m=provider.messages[i]; return Align(alignment: m.isUser?Alignment.centerRight:Alignment.centerLeft, child: Container(constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width*.82), margin: const EdgeInsets.symmetric(vertical: 5), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: m.isUser?Theme.of(context).colorScheme.primaryContainer:Theme.of(context).colorScheme.surfaceVariant, borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [if (m.attachmentType == 'image' && m.attachmentPath != null) ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(m.attachmentPath!), height: 150, fit: BoxFit.cover)), Text(m.content)]))); })),
+    if (provider.isLoading) const Padding(padding: EdgeInsets.all(8), child: Row(children: [SizedBox(width: 18,height:18,child:CircularProgressIndicator(strokeWidth:2)), SizedBox(width: 10), Text('المساعد يكتب...')])) ,
+    Padding(padding: const EdgeInsets.fromLTRB(8, 4, 8, 8), child: Row(children: [
+      IconButton(tooltip: 'رفع صورة', onPressed: provider.isLoading ? null : () async { final x = await ImagePicker().pickImage(source: ImageSource.gallery); if (x != null) provider.sendAttachment(_intake!, x.path, 'image'); }, icon: const Icon(Icons.image_outlined)),
+      IconButton(tooltip: 'رفع ملف', onPressed: provider.isLoading ? null : () async { final f = await FilePicker.platform.pickFiles(); final path=f?.files.single.path; if (path != null) provider.sendAttachment(_intake!, path, 'file'); }, icon: const Icon(Icons.attach_file)),
+      Expanded(child: TextField(controller: _message, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'اكتب سؤالك...', border: OutlineInputBorder()))),
+      IconButton.filled(tooltip: 'إرسال', onPressed: provider.isLoading ? null : () { final text=_message.text; _message.clear(); provider.send(_intake!, text); }, icon: const Icon(Icons.send_rounded)),
+    ])),
   ]));
 
   String? _required(String? v) => v == null || v.trim().isEmpty ? 'هذا الحقل مطلوب' : null;
