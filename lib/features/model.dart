@@ -246,6 +246,7 @@ class Appointment {
   final String specialtyName;
   final String workplace;
   final String payment;
+  final String paymentStatus;
   late final String status;
   final String time;
 
@@ -265,6 +266,7 @@ class Appointment {
     required this.specialtyName,
     required this.workplace,
     required this.payment,
+    this.paymentStatus = 'unpaid',
     required this.status,
     required this.time,
     required this.date,
@@ -288,7 +290,8 @@ class Appointment {
 
       specialtyName: data['specialtyName'] ?? 'تخصص غير معروف',
       workplace: data['workplace'] ?? 'مكان غير معروف',
-      payment: data['payment'] ?? 'غير محدد',
+      payment: data['payment'] ?? data['paymentMethod'] ?? 'غير محدد',
+      paymentStatus: data['paymentStatus'] ?? 'unpaid',
       status: data['status'] ?? 'pending',
       time: data['time'] ?? '--:--',
       date: data['date'] ?? Timestamp.now(),
@@ -311,6 +314,7 @@ class Appointment {
       'specialtyName': specialtyName,
       'workplace': workplace,
       'payment': payment,
+      'paymentStatus': paymentStatus,
       'status': status,
       'time': time,
       'date': date,

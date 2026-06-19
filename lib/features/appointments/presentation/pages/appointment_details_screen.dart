@@ -152,6 +152,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       _buildDetailRow(context, Icons.calendar_month_rounded, 'التاريخ', formatArabicDate(date)),
                       _buildDetailRow(context, Icons.schedule_rounded, 'الوقت', widget.appointment.time),
                       _buildDetailRow(context, Icons.payments_outlined, 'طريقة الدفع', widget.appointment.payment),
+                      _buildDetailRow(context, Icons.price_check_rounded, 'حالة الدفع', _translatePaymentStatus(widget.appointment.paymentStatus)),
                       _buildDetailRow(
                         context,
                         Icons.local_hospital_outlined,
@@ -301,6 +302,15 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       'ديسمبر'
     ];
     return months[month - 1];
+  }
+
+  String _translatePaymentStatus(String status) {
+    switch (status) {
+      case 'pending_on_delivery': return 'الدفع عند الاستلام';
+      case 'paid': return 'مدفوع';
+      case 'unpaid': return 'غير مدفوع';
+      default: return status;
+    }
   }
 
   String _translateStatus(String status) {
